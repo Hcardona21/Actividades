@@ -1,653 +1,328 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Gestor de Actividades — Celsia</title>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Gestor de Actividades - Celsia</title>
 <style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  :root {
-    --bg: #ffffff; --bg2: #f5f5f3; --bg3: #ededea;
-    --text: #1a1a18; --text2: #5f5e5a; --text3: #888780;
-    --border: rgba(0,0,0,0.12); --border2: rgba(0,0,0,0.2);
-    --green: #1d9e75; --green-bg: #eaf3de; --green-text: #3b6d11;
-    --amber-bg: #faeeda; --amber-text: #854f0b;
-    --red: #e24b4a; --red-bg: #fcebeb; --red-text: #a32d2d;
-    --blue-bg: #e6f1fb; --blue-text: #185fa5;
-    --radius: 8px; --radius-lg: 12px;
-    --font: 'Inter', system-ui, sans-serif;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --bg: #1c1c1a; --bg2: #252523; --bg3: #2e2e2b;
-      --text: #f0efe8; --text2: #b4b2a9; --text3: #888780;
-      --border: rgba(255,255,255,0.1); --border2: rgba(255,255,255,0.2);
-      --green-bg: #173404; --green-text: #97c459;
-      --amber-bg: #412402; --amber-text: #fac775;
-      --red-bg: #501313; --red-text: #f09595;
-      --blue-bg: #042c53; --blue-text: #85b7eb;
-    }
-  }
-  body { font-family: var(--font); background: var(--bg3); color: var(--text); min-height: 100vh; }
-  a { color: var(--blue-text); }
-
-  /* Layout */
-  .app { max-width: 860px; margin: 0 auto; padding: 2rem 1rem 4rem; }
-  .header { margin-bottom: 2rem; }
-  .header h1 { font-size: 22px; font-weight: 600; }
-  .header p { font-size: 14px; color: var(--text2); margin-top: 4px; }
-
-  /* Tabs */
-  .tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--border); margin-bottom: 1.5rem; }
-  .tab { padding: 9px 18px; font-size: 14px; color: var(--text2); cursor: pointer; border: none; background: none; border-bottom: 2px solid transparent; font-family: var(--font); transition: all .15s; }
-  .tab.active { color: var(--text); border-bottom-color: var(--text); font-weight: 500; }
-  .tab:hover:not(.active) { color: var(--text); }
-
-  /* Card */
-  .card { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem; margin-bottom: 1rem; }
-
-  /* Form */
-  .form-group { margin-bottom: 1rem; }
-  label { display: block; font-size: 13px; color: var(--text2); margin-bottom: 5px; }
-  input, textarea, select {
-    width: 100%; padding: 8px 12px; font-size: 14px;
-    border: 1px solid var(--border2); border-radius: var(--radius);
-    background: var(--bg); color: var(--text); font-family: var(--font);
-    transition: border-color .15s;
-  }
-  input:focus, textarea:focus, select:focus { outline: none; border-color: var(--text3); }
-  textarea { resize: vertical; min-height: 72px; line-height: 1.5; }
-  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-  @media (max-width: 540px) { .row { grid-template-columns: 1fr; } }
-
-  /* Buttons */
-  .btn { padding: 8px 18px; font-size: 14px; border-radius: var(--radius); cursor: pointer; font-family: var(--font); transition: all .15s; display: inline-flex; align-items: center; gap: 6px; }
-  .btn-primary { background: var(--text); color: var(--bg); border: none; font-weight: 500; }
-  .btn-primary:hover { opacity: .85; }
-  .btn-ghost { background: none; border: 1px solid var(--border2); color: var(--text2); }
-  .btn-ghost:hover { background: var(--bg2); color: var(--text); }
-  .btn-danger { background: none; border: 1px solid var(--red); color: var(--red-text); }
-  .btn-danger:hover { background: var(--red-bg); }
-  .btn-sm { padding: 5px 12px; font-size: 12px; }
-  .actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 1rem; flex-wrap: wrap; }
-
-  /* Metrics */
-  .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 1.5rem; }
-  @media (max-width: 540px) { .metrics { grid-template-columns: 1fr 1fr; } }
-  .metric { background: var(--bg2); border-radius: var(--radius); padding: .9rem 1rem; }
-  .metric-label { font-size: 12px; color: var(--text2); margin-bottom: 3px; }
-  .metric-value { font-size: 22px; font-weight: 600; }
-
-  /* Progress */
-  .progress { height: 4px; background: var(--border); border-radius: 2px; margin-top: 6px; }
-  .progress-fill { height: 100%; background: var(--green); border-radius: 2px; transition: width .4s; }
-
-  /* Filters */
-  .filter-bar { display: flex; gap: 8px; margin-bottom: 1rem; flex-wrap: wrap; }
-  .filter-bar select { flex: 1; min-width: 140px; max-width: 200px; }
-  .filter-bar input { flex: 2; min-width: 180px; }
-
-  /* Activity item */
-  .act-item { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1rem 1.1rem; margin-bottom: 8px; }
-  .act-top { display: flex; align-items: flex-start; gap: 10px; flex-wrap: wrap; }
-  .act-title { font-size: 15px; font-weight: 500; flex: 1; min-width: 140px; }
-  .act-meta { font-size: 12px; color: var(--text3); margin-top: 4px; line-height: 1.6; }
-  .act-desc { font-size: 13px; color: var(--text2); margin-top: 6px; line-height: 1.5; }
-  .act-btns { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
-
-  /* Badges */
-  .badge { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 500; white-space: nowrap; }
-  .b-active  { background: var(--green-bg); color: var(--green-text); }
-  .b-pending { background: var(--amber-bg); color: var(--amber-text); }
-  .b-done    { background: var(--bg3);      color: var(--text3); }
-  .b-overdue { background: var(--red-bg);   color: var(--red-text); }
-  .b-range   { background: var(--blue-bg);  color: var(--blue-text); }
-
-  /* Alerts */
-  .alert { padding: 11px 14px; border-radius: var(--radius); font-size: 13px; margin-bottom: 1rem; line-height: 1.5; }
-  .alert-info    { background: var(--blue-bg);  color: var(--blue-text);  border: 1px solid rgba(56,138,221,.25); }
-  .alert-success { background: var(--green-bg); color: var(--green-text); border: 1px solid rgba(29,158,117,.25); }
-  .alert-warn    { background: var(--amber-bg); color: var(--amber-text); border: 1px solid rgba(186,117,23,.25); }
-
-  /* Separator */
-  hr { border: none; border-top: 1px solid var(--border); margin: 1.25rem 0; }
-
-  /* Code block */
-  pre { background: var(--bg2); padding: 12px 14px; border-radius: var(--radius); font-size: 12px; font-family: 'Menlo', 'Consolas', monospace; overflow-x: auto; line-height: 1.6; color: var(--text); }
-
-  /* Empty state */
-  .empty { text-align: center; padding: 3rem 1rem; color: var(--text3); font-size: 14px; line-height: 1.8; }
-
-  /* Toast */
-  .toast {
-    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px);
-    background: var(--text); color: var(--bg); padding: 10px 22px;
-    border-radius: var(--radius); font-size: 13px; z-index: 999;
-    opacity: 0; transition: all .25s; pointer-events: none; white-space: nowrap;
-  }
-  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-
-  /* Status dot */
-  .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 5px; }
-  .dot-green { background: var(--green); }
-  .dot-red   { background: var(--red); }
-  .dot-gray  { background: var(--text3); }
-
-  /* Config section */
-  .cfg-section { margin-bottom: 1.5rem; }
-  .cfg-section h3 { font-size: 15px; font-weight: 500; margin-bottom: .9rem; }
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#fff;--bg2:#f5f5f3;--bg3:#ededea;--text:#1a1a18;--text2:#5f5e5a;--text3:#888780;--border:rgba(0,0,0,0.1);--border2:rgba(0,0,0,0.18);--green:#1d9e75;--gbg:#eaf3de;--gtxt:#3b6d11;--abg:#faeeda;--atxt:#854f0b;--red:#e24b4a;--rbg:#fcebeb;--rtxt:#a32d2d;--bbg:#e6f1fb;--btxt:#185fa5;--pbg:#fbeaf0;--ptxt:#993556;--r:8px;--rl:12px}
+@media(prefers-color-scheme:dark){:root{--bg:#1c1c1a;--bg2:#252523;--bg3:#2e2e2b;--text:#f0efe8;--text2:#b4b2a9;--text3:#888780;--border:rgba(255,255,255,0.09);--border2:rgba(255,255,255,0.18);--gbg:#173404;--gtxt:#97c459;--abg:#412402;--atxt:#fac775;--rbg:#501313;--rtxt:#f09595;--bbg:#042c53;--btxt:#85b7eb;--pbg:#4b1528;--ptxt:#ed93b1}}
+body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg3);color:var(--text);min-height:100vh}
+.app{max-width:920px;margin:0 auto;padding:2rem 1rem 5rem}
+.header{margin-bottom:1.75rem}.header h1{font-size:21px;font-weight:600}.header p{font-size:13px;color:var(--text2);margin-top:3px}
+.tabs{display:flex;border-bottom:1px solid var(--border);margin-bottom:1.5rem;overflow-x:auto}
+.tab{padding:9px 16px;font-size:13.5px;color:var(--text2);cursor:pointer;border:none;background:none;border-bottom:2px solid transparent;font-family:inherit;transition:all .15s;white-space:nowrap}
+.tab.active{color:var(--text);border-bottom-color:var(--text);font-weight:500}.tab:hover:not(.active){color:var(--text)}
+.card{background:var(--bg);border:1px solid var(--border);border-radius:var(--rl);padding:1.2rem;margin-bottom:.75rem}
+.fg{margin-bottom:.9rem}
+label{display:block;font-size:12.5px;color:var(--text2);margin-bottom:4px;font-weight:500}
+input,textarea,select{width:100%;padding:8px 11px;font-size:13.5px;border:1px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);font-family:inherit;transition:border-color .15s}
+input:focus,textarea:focus,select:focus{outline:none;border-color:var(--text3)}
+textarea{resize:vertical;min-height:68px;line-height:1.5}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+@media(max-width:560px){.row2{grid-template-columns:1fr}}
+.btn{padding:7px 16px;font-size:13px;border-radius:var(--r);cursor:pointer;font-family:inherit;transition:all .15s;display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.btn-p{background:var(--text);color:var(--bg);border:none;font-weight:500}.btn-p:hover{opacity:.83}
+.btn-g{background:none;border:1px solid var(--border2);color:var(--text2)}.btn-g:hover{background:var(--bg2);color:var(--text)}
+.btn-d{background:none;border:1px solid var(--red);color:var(--rtxt)}.btn-d:hover{background:var(--rbg)}
+.btn-sm{padding:4px 11px;font-size:12px}
+.actions{display:flex;gap:7px;justify-content:flex-end;margin-top:.9rem;flex-wrap:wrap}
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-bottom:1.25rem}
+@media(max-width:540px){.metrics{grid-template-columns:1fr 1fr}}
+.metric{background:var(--bg2);border-radius:var(--r);padding:.85rem 1rem}
+.mlabel{font-size:11.5px;color:var(--text2);margin-bottom:2px}.mval{font-size:21px;font-weight:600}
+.progress{height:3px;background:var(--border);border-radius:2px;margin-top:5px}
+.pfill{height:100%;background:var(--green);border-radius:2px;transition:width .4s}
+.fbar{display:flex;gap:7px;margin-bottom:.9rem;flex-wrap:wrap}.fbar select{flex:1;min-width:130px;max-width:190px}.fbar input{flex:2;min-width:160px}
+.aitem{background:var(--bg);border:1px solid var(--border);border-radius:var(--rl);padding:.95rem 1.1rem;margin-bottom:7px}
+.atop{display:flex;align-items:flex-start;gap:8px;flex-wrap:wrap}.atitle{font-size:14.5px;font-weight:500;flex:1;min-width:120px}
+.ameta{font-size:11.5px;color:var(--text3);margin-top:3px;line-height:1.65}.adesc{font-size:13px;color:var(--text2);margin-top:5px;line-height:1.5}
+.abtns{display:flex;gap:5px;margin-top:8px;flex-wrap:wrap}
+.avatars{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;align-items:center}
+.av{width:26px;height:26px;border-radius:50%;font-size:10px;font-weight:600;display:inline-flex;align-items:center;justify-content:center;border:1.5px solid var(--bg)}
+.av-lg{width:34px;height:34px;font-size:12px;font-weight:600;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
+.badge{display:inline-flex;align-items:center;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:500;white-space:nowrap}
+.b-active{background:var(--gbg);color:var(--gtxt)}.b-pending{background:var(--abg);color:var(--atxt)}
+.b-done{background:var(--bg3);color:var(--text3)}.b-overdue{background:var(--rbg);color:var(--rtxt)}
+.b-range{background:var(--bbg);color:var(--btxt)}.b-group{background:var(--pbg);color:var(--ptxt)}
+.alert{padding:10px 13px;border-radius:var(--r);font-size:13px;margin-bottom:.9rem;line-height:1.5}
+.ai{background:var(--bbg);color:var(--btxt);border:1px solid rgba(56,138,221,.2)}
+.aw{background:var(--abg);color:var(--atxt);border:1px solid rgba(186,117,23,.2)}
+hr{border:none;border-top:1px solid var(--border);margin:1.1rem 0}
+.empty{text-align:center;padding:2.5rem 1rem;color:var(--text3);font-size:13.5px;line-height:1.8}
+.mcard{background:var(--bg);border:1px solid var(--border);border-radius:var(--rl);padding:.9rem 1rem;display:flex;align-items:center;gap:12px;margin-bottom:7px}
+.mcard-body{flex:1;min-width:0}.mname{font-size:14px;font-weight:500}.mrole{font-size:12px;color:var(--text2);margin-top:1px}
+.mbtns{display:flex;gap:5px;flex-shrink:0}
+.mcheck{display:flex;align-items:center;gap:9px;padding:7px 9px;border-radius:var(--r);cursor:pointer;transition:background .12s}
+.mcheck:hover{background:var(--bg2)}.mcheck input[type=checkbox]{width:15px;height:15px;cursor:pointer;accent-color:var(--green);flex-shrink:0}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100;display:flex;align-items:center;justify-content:center;padding:1rem}
+.modal{background:var(--bg);border-radius:var(--rl);padding:1.4rem;width:100%;max-width:460px;max-height:90vh;overflow-y:auto}
+.modal h2{font-size:16px;font-weight:600;margin-bottom:1rem}
+.modal-actions{display:flex;gap:7px;justify-content:flex-end;margin-top:1rem}
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(16px);background:var(--text);color:var(--bg);padding:9px 20px;border-radius:var(--r);font-size:13px;z-index:999;opacity:0;transition:all .22s;pointer-events:none;white-space:nowrap}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.c0{background:#e6f1fb;color:#185fa5}.c1{background:#eaf3de;color:#3b6d11}.c2{background:#faeeda;color:#854f0b}
+.c3{background:#fcebeb;color:#a32d2d}.c4{background:#fbeaf0;color:#993556}.c5{background:#eeedfe;color:#534ab7}.c6{background:#e1f5ee;color:#0f6e56}
 </style>
 </head>
 <body>
 <div class="app">
-  <div class="header">
-    <h1>Gestor de Actividades</h1>
-    <p>Seguimiento de tareas con recordatorios automáticos por WhatsApp</p>
-  </div>
-
+  <div class="header"><h1>Gestor de Actividades</h1><p>Seguimiento de tareas &middot; Equipo Celsia &middot; Recordatorios WhatsApp</p></div>
   <div class="tabs">
     <button class="tab active" onclick="goTab('activities')">Actividades</button>
     <button class="tab" onclick="goTab('new')">+ Nueva</button>
-    <button class="tab" onclick="goTab('config')">Configuración</button>
+    <button class="tab" onclick="goTab('team')">Equipo</button>
+    <button class="tab" onclick="goTab('mine')">Por miembro</button>
+    <button class="tab" onclick="goTab('config')">Configuracion</button>
   </div>
-
-  <!-- TAB: ACTIVIDADES -->
   <div id="tab-activities">
     <div class="metrics" id="metrics"></div>
-    <div class="filter-bar">
-      <select id="f-status" onchange="render()">
-        <option value="">Todos los estados</option>
-        <option value="pending">Pendiente</option>
-        <option value="active">En curso</option>
-        <option value="done">Completado</option>
-        <option value="overdue">Vencido</option>
-      </select>
-      <input type="text" id="f-search" placeholder="Buscar por título…" oninput="render()" />
+    <div class="fbar">
+      <select id="f-status" onchange="renderActs()"><option value="">Todos los estados</option><option value="pending">Pendiente</option><option value="active">En curso</option><option value="done">Completado</option><option value="overdue">Vencido</option></select>
+      <select id="f-member" onchange="renderActs()"><option value="">Todos los miembros</option></select>
+      <input type="text" id="f-search" placeholder="Buscar..." oninput="renderActs()"/>
     </div>
-    <div id="list"></div>
+    <div id="acts-list"></div>
   </div>
-
-  <!-- TAB: NUEVA ACTIVIDAD -->
   <div id="tab-new" style="display:none">
     <div class="card">
-      <div class="form-group">
-        <label>Título *</label>
-        <input id="e-title" type="text" placeholder="Ej: Revisión de medición mensual" />
+      <div class="fg"><label>Titulo *</label><input id="e-title" type="text" placeholder="Ej: Revision de medicion mensual"/></div>
+      <div class="fg"><label>Descripcion</label><textarea id="e-desc" placeholder="Detalle, contexto, notas..."></textarea></div>
+      <div class="row2">
+        <div class="fg"><label>Tipo de fecha</label><select id="e-dtype" onchange="toggleDates()"><option value="single">Fecha especifica</option><option value="range">Rango de fechas</option></select></div>
+        <div class="fg"><label>Prioridad</label><select id="e-priority"><option value="normal">Normal</option><option value="alta">Alta</option><option value="critica">Critica</option></select></div>
       </div>
-      <div class="form-group">
-        <label>Descripción</label>
-        <textarea id="e-desc" placeholder="Detalle, contexto, responsable…"></textarea>
-      </div>
-      <div class="form-group">
-        <label>Tipo de fecha</label>
-        <select id="e-dtype" onchange="toggleDates()">
-          <option value="single">Fecha específica</option>
-          <option value="range">Rango de fechas</option>
-        </select>
-      </div>
-      <div id="date-single" class="form-group">
-        <label>Fecha</label>
-        <input id="e-date" type="date" />
-      </div>
-      <div id="date-range" style="display:none">
-        <div class="row">
-          <div class="form-group"><label>Fecha inicio</label><input id="e-dstart" type="date" /></div>
-          <div class="form-group"><label>Fecha fin</label><input id="e-dend" type="date" /></div>
+      <div id="date-single" class="fg"><label>Fecha</label><input id="e-date" type="date"/></div>
+      <div id="date-range" style="display:none"><div class="row2"><div class="fg"><label>Fecha inicio</label><input id="e-dstart" type="date"/></div><div class="fg"><label>Fecha fin</label><input id="e-dend" type="date"/></div></div></div>
+      <div class="fg"><label>Hora de recordatorio</label><input id="e-time" type="time" value="08:00"/></div>
+      <div class="fg">
+        <label>Asignar a miembros del equipo</label>
+        <div id="member-checklist" style="border:1px solid var(--border);border-radius:var(--r);padding:6px;max-height:210px;overflow-y:auto;background:var(--bg)">
+          <div style="padding:8px;color:var(--text3);font-size:13px">Agrega miembros en la pestana <strong>Equipo</strong> primero.</div>
         </div>
       </div>
-      <div class="row">
-        <div class="form-group">
-          <label>Responsable</label>
-          <input id="e-owner" type="text" placeholder="Ej: Carlos López" />
-        </div>
-        <div class="form-group">
-          <label>Prioridad</label>
-          <select id="e-priority">
-            <option value="normal">Normal</option>
-            <option value="alta">Alta</option>
-            <option value="critica">Crítica</option>
-          </select>
-        </div>
-      </div>
-      <div class="form-group">
-        <label>Hora de recordatorio</label>
-        <input id="e-time" type="time" value="08:00" />
-      </div>
-      <div class="actions">
-        <button class="btn btn-ghost" onclick="cancelEdit()">Cancelar</button>
-        <button class="btn btn-primary" onclick="save()">Guardar actividad</button>
-      </div>
+      <div class="actions"><button class="btn btn-g" onclick="cancelEdit()">Cancelar</button><button class="btn btn-p" onclick="saveAct()">Guardar actividad</button></div>
     </div>
   </div>
-
-  <!-- TAB: CONFIGURACIÓN -->
+  <div id="tab-team" style="display:none">
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:8px">
+        <span style="font-size:15px;font-weight:500">Miembros del equipo</span>
+        <button class="btn btn-p btn-sm" onclick="openMModal()">+ Agregar miembro</button>
+      </div>
+      <div id="team-list"><div class="empty">No hay miembros registrados.</div></div>
+    </div>
+  </div>
+  <div id="tab-mine" style="display:none">
+    <div class="fbar">
+      <select id="m-filter" onchange="renderByMember()" style="flex:1;max-width:260px"><option value="">Selecciona un miembro...</option></select>
+      <select id="m-status" onchange="renderByMember()" style="flex:1;max-width:190px"><option value="">Todos los estados</option><option value="pending">Pendiente</option><option value="active">En curso</option><option value="done">Completado</option><option value="overdue">Vencido</option></select>
+    </div>
+    <div id="mine-metrics" style="display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:1rem"></div>
+    <div id="mine-list"><div class="empty">Selecciona un miembro para ver sus actividades.</div></div>
+  </div>
   <div id="tab-config" style="display:none">
     <div class="card">
-
-      <div class="cfg-section">
-        <h3>Conexión Supabase</h3>
-        <div class="alert alert-info">Ingresa tus credenciales para guardar actividades en la nube.</div>
-        <div class="form-group">
-          <label>URL del proyecto</label>
-          <input id="c-url" type="text" placeholder="https://xxxx.supabase.co" />
-        </div>
-        <div class="form-group">
-          <label>Anon Key</label>
-          <input id="c-key" type="password" placeholder="eyJhbGci…" />
-        </div>
-        <div style="display:flex;gap:8px;margin-top:6px;">
-          <button class="btn btn-ghost" onclick="testSupa()">Probar conexión</button>
-          <button class="btn btn-primary" onclick="saveCfg()">Guardar</button>
-        </div>
-        <div id="supa-status" style="margin-top:10px;font-size:13px;"></div>
+      <div style="font-size:15px;font-weight:500;margin-bottom:.9rem">Conexion Supabase</div>
+      <div class="alert ai">Credenciales ya configuradas para el proyecto APPseguimiento.</div>
+      <div class="fg"><label>URL del proyecto</label><input id="c-url" type="text" placeholder="https://xxxx.supabase.co"/></div>
+      <div class="fg"><label>Anon Key</label><input id="c-key" type="password" placeholder="eyJhbGci..."/></div>
+      <div style="display:flex;gap:7px"><button class="btn btn-g" onclick="testSupa()">Probar</button><button class="btn btn-p" onclick="saveCfg()">Guardar</button></div>
+      <div id="supa-st" style="margin-top:9px;font-size:13px"></div>
+      <hr/>
+      <div style="font-size:15px;font-weight:500;margin-bottom:.9rem">WhatsApp - CallMeBot</div>
+      <div class="alert aw">Guarda <strong>+34 644 37 79 70</strong> en WhatsApp y envia: <code>I allow callmebot to send me messages</code></div>
+      <div class="row2">
+        <div class="fg"><label>Numero WhatsApp (fallback)</label><input id="c-phone" type="tel" placeholder="+573001234567"/></div>
+        <div class="fg"><label>API Key CallMeBot</label><input id="c-wakey" type="text" placeholder="123456"/></div>
       </div>
-
-      <hr />
-
-      <div class="cfg-section">
-        <h3>WhatsApp — CallMeBot</h3>
-        <div class="alert alert-warn">
-          Para obtener tu API Key gratuita: guarda el número <strong>+34 644 37 79 70</strong> en WhatsApp y envíale el mensaje <code>I allow callmebot to send me messages</code>.
-        </div>
-        <div class="row">
-          <div class="form-group">
-            <label>Tu número WhatsApp</label>
-            <input id="c-phone" type="tel" placeholder="+573001234567" />
-          </div>
-          <div class="form-group">
-            <label>API Key CallMeBot</label>
-            <input id="c-wakey" type="text" placeholder="123456" />
-          </div>
-        </div>
-        <div style="display:flex;gap:8px;margin-top:6px;">
-          <button class="btn btn-ghost" onclick="testWA()">Enviar mensaje de prueba</button>
-          <button class="btn btn-primary" onclick="saveCfg()">Guardar</button>
-        </div>
-        <div id="wa-status" style="margin-top:10px;font-size:13px;"></div>
-      </div>
-
-      <hr />
-
-      <div class="cfg-section">
-        <h3>SQL — Crear tabla en Supabase</h3>
-        <div class="alert alert-info">Ejecuta esto en <strong>Supabase → SQL Editor</strong> si aún no creaste la tabla:</div>
-        <pre>CREATE TABLE IF NOT EXISTS activities (
-  id            uuid        DEFAULT gen_random_uuid() PRIMARY KEY,
-  title         text        NOT NULL,
-  description   text,
-  date_type     text        DEFAULT 'single',
-  date_single   date,
-  date_start    date,
-  date_end      date,
-  owner         text,
-  priority      text        DEFAULT 'normal',
-  reminder_time text        DEFAULT '08:00',
-  status        text        DEFAULT 'pending',
-  created_at    timestamptz DEFAULT now()
-);</pre>
-      </div>
-
+      <div style="display:flex;gap:7px"><button class="btn btn-g" onclick="testWA()">Mensaje de prueba</button><button class="btn btn-p" onclick="saveCfg()">Guardar</button></div>
+      <div id="wa-st" style="margin-top:9px;font-size:13px"></div>
     </div>
   </div>
 </div>
-
+<div class="modal-overlay" id="m-modal" style="display:none" onclick="if(event.target===this)closeMModal()">
+  <div class="modal">
+    <h2 id="m-modal-title">Agregar miembro</h2>
+    <div class="fg"><label>Nombre completo *</label><input id="m-name" type="text" placeholder="Ej: Carlos Lopez"/></div>
+    <div class="row2">
+      <div class="fg"><label>Cargo / Rol</label><input id="m-role" type="text" placeholder="Ej: Tecnico medicion"/></div>
+      <div class="fg"><label>WhatsApp</label><input id="m-phone" type="tel" placeholder="+573001234567"/></div>
+    </div>
+    <div class="fg"><label>Email</label><input id="m-email" type="email" placeholder="correo@celsia.com"/></div>
+    <div class="modal-actions"><button class="btn btn-g" onclick="closeMModal()">Cancelar</button><button class="btn btn-p" onclick="saveMember()">Guardar</button></div>
+  </div>
+</div>
 <div class="toast" id="toast"></div>
-
 <script>
-// ─── Config ───────────────────────────────────────────────────────────────────
-const SUPABASE_URL = 'https://ifbhzcqhijhtqngqkbkq.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlmYmh6Y3FoaWpodHFuZ3FrYmtxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1OTE5OTEsImV4cCI6MjA5MTE2Nzk5MX0.n87ZqRHzQhSLvXHt_0EKcltGHXoUu3lmgnTQn8uHuP8';
-
-// ─── Estado ───────────────────────────────────────────────────────────────────
-let activities = [];
-let editingId = null;
-let cfg = JSON.parse(localStorage.getItem('act_cfg') || '{}');
-
-// ─── Supabase helpers ────────────────────────────────────────────────────────
-function sbHeaders(key) {
-  return {
-    'Content-Type': 'application/json',
-    'apikey': key || SUPABASE_KEY,
-    'Authorization': 'Bearer ' + (key || SUPABASE_KEY)
-  };
+const SB_URL='https://ifbhzcqhijhtqngqkbkq.supabase.co';
+const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlmYmh6Y3FoaWpodHFuZ3FrYmtxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1OTE5OTEsImV4cCI6MjA5MTE2Nzk5MX0.n87ZqRHzQhSLvXHt_0EKcltGHXoUu3lmgnTQn8uHuP8';
+const COLS=['c0','c1','c2','c3','c4','c5','c6'];
+let acts=[],members=[],asgn={},editActId=null,editMId=null;
+let cfg=JSON.parse(localStorage.getItem('act_cfg')||'{}');
+function U(){return cfg.url||SB_URL}function K(){return cfg.key||SB_KEY}
+function H(x={}){return{'Content-Type':'application/json','apikey':K(),'Authorization':'Bearer '+K(),...x}}
+async function GET(p){const r=await fetch(U()+p,{headers:H()});if(!r.ok)throw new Error(await r.text());return r.json()}
+async function POST(p,b,pref='return=representation'){const r=await fetch(U()+p,{method:'POST',headers:H({'Prefer':pref}),body:JSON.stringify(b)});if(!r.ok)throw new Error(await r.text());return pref.includes('representation')?r.json():null}
+async function PATCH(p,b){await fetch(U()+p,{method:'PATCH',headers:H({'Prefer':'return=minimal'}),body:JSON.stringify(b)})}
+async function DEL(p){await fetch(U()+p,{method:'DELETE',headers:H()})}
+async function loadAll(){
+  try{
+    [acts,members]=await Promise.all([GET('/rest/v1/activities?order=created_at.desc&select=*'),GET('/rest/v1/team_members?order=name.asc&select=*&active=eq.true')]);
+    const a=await GET('/rest/v1/activity_assignments?select=activity_id,member_id');
+    asgn={};a.forEach(x=>{if(!asgn[x.activity_id])asgn[x.activity_id]=[];asgn[x.activity_id].push(x.member_id)});
+    localStorage.setItem('act_local',JSON.stringify(acts));localStorage.setItem('mbr_local',JSON.stringify(members));
+  }catch{acts=JSON.parse(localStorage.getItem('act_local')||'[]');members=JSON.parse(localStorage.getItem('mbr_local')||'[]');}
+  renderActs();renderTeam();buildSelects();buildChecklist();
 }
-
-async function sbFetch(path, opts = {}) {
-  const url = (cfg.url || SUPABASE_URL) + path;
-  const key = cfg.key || SUPABASE_KEY;
-  const res = await fetch(url, { ...opts, headers: { ...sbHeaders(key), ...(opts.headers || {}) } });
-  return res;
+function today(){return new Date().toISOString().split('T')[0]}
+function st(a){
+  if(a.status==='done')return'done';const t=today();
+  if(a.date_type==='single'){if(!a.date_single)return'pending';if(a.date_single<t)return'overdue';if(a.date_single===t)return'active';return'pending'}
+  if(!a.date_start||!a.date_end)return'pending';if(a.date_end<t)return'overdue';if(a.date_start<=t&&t<=a.date_end)return'active';return'pending'
 }
-
-async function loadActivities() {
-  try {
-    const res = await sbFetch('/rest/v1/activities?order=created_at.desc&select=*');
-    if (res.ok) {
-      activities = await res.json();
-    } else {
-      activities = JSON.parse(localStorage.getItem('act_local') || '[]');
-    }
-  } catch {
-    activities = JSON.parse(localStorage.getItem('act_local') || '[]');
-  }
-  render();
+const SL={pending:'Pendiente',active:'En curso',done:'Completado',overdue:'Vencido'};
+const SC={pending:'b-pending',active:'b-active',done:'b-done',overdue:'b-overdue'};
+const PL={normal:'',alta:' - Alta prioridad',critica:' - CRITICA'};
+function fmtD(a){if(a.date_type==='range')return fd(a.date_start)+' - '+fd(a.date_end);return fd(a.date_single)}
+function fd(d){if(!d)return'-';const[y,m,day]=d.split('-');return(+day)+' '+['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'][+m-1]+' '+y}
+function ini(n){return n.split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase()}
+function col(id){const i=members.findIndex(m=>m.id===id);return COLS[((i%7)+7)%7]}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+function renderActs(){
+  const fs=document.getElementById('f-status').value,fm=document.getElementById('f-member').value,fq=document.getElementById('f-search').value.toLowerCase();
+  let list=acts.map(a=>({...a,_s:st(a)}));
+  if(fs)list=list.filter(a=>a._s===fs);if(fm)list=list.filter(a=>(asgn[a.id]||[]).includes(fm));
+  if(fq)list=list.filter(a=>a.title.toLowerCase().includes(fq)||(a.description||'').toLowerCase().includes(fq));
+  list.sort((a,b)=>({overdue:0,active:1,pending:2,done:3}[a._s]-{overdue:0,active:1,pending:2,done:3}[b._s]));
+  const tot=acts.length,done=acts.filter(a=>st(a)==='done').length,ac2=acts.filter(a=>st(a)==='active').length,ov=acts.filter(a=>st(a)==='overdue').length,pct=tot?Math.round(done/tot*100):0;
+  document.getElementById('metrics').innerHTML='<div class="metric"><div class="mlabel">Total</div><div class="mval">'+tot+'</div></div><div class="metric"><div class="mlabel">En curso</div><div class="mval" style="color:var(--green)">'+ac2+'</div></div><div class="metric"><div class="mlabel">Vencidas</div><div class="mval" style="color:var(--red)">'+ov+'</div></div><div class="metric"><div class="mlabel">Completadas</div><div class="mval">'+done+' <span style="font-size:12px;color:var(--text3)">'+pct+'%</span><div class="progress"><div class="pfill" style="width:'+pct+'%"></div></div></div></div>';
+  const el=document.getElementById('acts-list');
+  if(!list.length){el.innerHTML='<div class="empty">'+(acts.length?'Sin resultados.':'No hay actividades.<br>Crea una desde <strong>+ Nueva</strong>.')+'</div>';return}
+  el.innerHTML=list.map(a=>aHTML(a)).join('');
 }
-
-async function upsertActivity(act) {
-  try {
-    const body = {
-      title: act.title, description: act.description || null,
-      date_type: act.date_type, date_single: act.date_single || null,
-      date_start: act.date_start || null, date_end: act.date_end || null,
-      owner: act.owner || null, priority: act.priority,
-      reminder_time: act.reminder_time, status: act.status
-    };
-    if (act.id && !act.id.startsWith('loc_')) {
-      await sbFetch(`/rest/v1/activities?id=eq.${act.id}`, {
-        method: 'PATCH',
-        headers: { 'Prefer': 'return=minimal' },
-        body: JSON.stringify(body)
-      });
-    } else {
-      const res = await sbFetch('/rest/v1/activities', {
-        method: 'POST',
-        headers: { 'Prefer': 'return=representation' },
-        body: JSON.stringify(body)
-      });
-      if (res.ok) {
-        const data = await res.json();
-        return data[0]?.id;
-      }
-    }
-  } catch {}
-  return null;
+function aHTML(a){
+  const ms=(asgn[a.id]||[]).map(id=>members.find(m=>m.id===id)).filter(Boolean),isG=ms.length>1;
+  const avs=ms.length?'<div class="avatars">'+ms.map(m=>'<div class="av '+col(m.id)+'" title="'+esc(m.name)+'">'+ini(m.name)+'</div>').join('')+(isG?'<span class="badge b-group" style="margin-left:3px">Grupal</span>':'')+'</div>':'';
+  return'<div class="aitem"><div class="atop"><div class="atitle">'+esc(a.title)+'</div><span class="badge '+SC[a._s]+'">'+SL[a._s]+'</span>'+(a.date_type==='range'?'<span class="badge b-range">Rango</span>':'')+'</div><div class="ameta">'+fmtD(a)+(PL[a.priority]||'')+' &middot; '+( a.reminder_time||'08:00')+'</div>'+(a.description?'<div class="adesc">'+esc(a.description)+'</div>':'')+avs+'<div class="abtns">'+(a._s!=='done'?'<button class="btn btn-g btn-sm" onclick="markDone(''+a.id+'')">Completar</button>':'')+'<button class="btn btn-g btn-sm" onclick="editAct(''+a.id+'')">Editar</button><button class="btn btn-g btn-sm" onclick="notifyAll(''+a.id+'')">Notificar</button><button class="btn btn-d btn-sm" onclick="delAct(''+a.id+'')">Eliminar</button></div></div>'
 }
-
-async function deleteRemote(id) {
-  if (!id || id.startsWith('loc_')) return;
-  try { await sbFetch(`/rest/v1/activities?id=eq.${id}`, { method: 'DELETE' }); } catch {}
+function renderTeam(){
+  const el=document.getElementById('team-list');
+  if(!members.length){el.innerHTML='<div class="empty">No hay miembros registrados.<br>Haz clic en <strong>+ Agregar miembro</strong>.</div>';return}
+  el.innerHTML=members.map((m,i)=>{
+    const tot=Object.values(asgn).filter(arr=>arr.includes(m.id)).length;
+    const pend=acts.filter(a=>(asgn[a.id]||[]).includes(m.id)&&st(a)!=='done').length;
+    return'<div class="mcard"><div class="av-lg '+COLS[i%7]+'">'+ini(m.name)+'</div><div class="mcard-body"><div class="mname">'+esc(m.name)+'</div><div class="mrole">'+(m.role?esc(m.role)+' &middot; ':'')+'<span style="color:var(--gtxt)">'+pend+' pendiente'+(pend!==1?'s':'')+'</span> de '+tot+' asignadas</div>'+(m.phone?'<div style="font-size:11.5px;color:var(--text3);margin-top:2px">'+esc(m.phone)+'</div>':'')+(m.email?'<div style="font-size:11.5px;color:var(--text3)">'+esc(m.email)+'</div>':'')+'</div><div class="mbtns"><button class="btn btn-g btn-sm" onclick="openMModal(''+m.id+'')">Editar</button><button class="btn btn-d btn-sm" onclick="delMember(''+m.id+'')">Eliminar</button></div></div>'
+  }).join('');
 }
-
-// ─── Status logic ────────────────────────────────────────────────────────────
-function today() {
-  return new Date().toISOString().split('T')[0];
+function renderByMember(){
+  const mid=document.getElementById('m-filter').value,ms=document.getElementById('m-status').value;
+  const el=document.getElementById('mine-list'),mel=document.getElementById('mine-metrics');
+  if(!mid){el.innerHTML='<div class="empty">Selecciona un miembro.</div>';mel.innerHTML='';return}
+  let list=acts.filter(a=>(asgn[a.id]||[]).includes(mid)).map(a=>({...a,_s:st(a)}));
+  const tot=list.length,done=list.filter(a=>a._s==='done').length,ov=list.filter(a=>a._s==='overdue').length;
+  mel.innerHTML='<div class="metric"><div class="mlabel">Asignadas</div><div class="mval">'+tot+'</div></div><div class="metric"><div class="mlabel">Completadas</div><div class="mval" style="color:var(--green)">'+done+'</div></div><div class="metric"><div class="mlabel">Vencidas</div><div class="mval" style="color:var(--red)">'+ov+'</div></div>';
+  if(ms)list=list.filter(a=>a._s===ms);
+  list.sort((a,b)=>({overdue:0,active:1,pending:2,done:3}[a._s]-{overdue:0,active:1,pending:2,done:3}[b._s]));
+  el.innerHTML=list.length?list.map(a=>aHTML(a)).join(''):'<div class="empty">Sin actividades para este filtro.</div>';
 }
-
-function getStatus(act) {
-  if (act.status === 'done') return 'done';
-  const t = today();
-  if (act.date_type === 'single') {
-    if (!act.date_single) return 'pending';
-    if (act.date_single < t) return 'overdue';
-    if (act.date_single === t) return 'active';
-    return 'pending';
-  } else {
-    if (!act.date_start || !act.date_end) return 'pending';
-    if (act.date_end < t) return 'overdue';
-    if (act.date_start <= t && t <= act.date_end) return 'active';
-    return 'pending';
-  }
-}
-
-const STATUS_LABEL = { pending: 'Pendiente', active: 'En curso', done: 'Completado', overdue: 'Vencido' };
-const STATUS_CLASS = { pending: 'b-pending', active: 'b-active', done: 'b-done', overdue: 'b-overdue' };
-const PRIORITY_LABEL = { normal: '', alta: ' · Alta prioridad', critica: ' · 🚨 CRÍTICA' };
-
-function fmtDate(act) {
-  if (act.date_type === 'range') return `${fmtD(act.date_start)} → ${fmtD(act.date_end)}`;
-  return fmtD(act.date_single);
-}
-function fmtD(d) {
-  if (!d) return '—';
-  const [y, m, day] = d.split('-');
-  const M = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'][+m-1];
-  return `${+day} ${M} ${y}`;
-}
-
-// ─── Render ───────────────────────────────────────────────────────────────────
-function render() {
-  const fs = document.getElementById('f-status').value;
-  const fq = document.getElementById('f-search').value.toLowerCase();
-
-  let list = activities.map(a => ({ ...a, _status: getStatus(a) }));
-  if (fs) list = list.filter(a => a._status === fs);
-  if (fq) list = list.filter(a => a.title.toLowerCase().includes(fq));
-  list.sort((a, b) => {
-    const o = { overdue: 0, active: 1, pending: 2, done: 3 };
-    return o[a._status] - o[b._status];
+function buildSelects(){
+  ['f-member','m-filter'].forEach(id=>{
+    const el=document.getElementById(id),val=el.value,first=el.options[0].cloneNode(true);
+    el.innerHTML='';el.appendChild(first);
+    members.forEach(m=>{const o=document.createElement('option');o.value=m.id;o.textContent=m.name;el.appendChild(o)});
+    if(val)el.value=val;
   });
-
-  // Metrics
-  const total = activities.length;
-  const done  = activities.filter(a => getStatus(a) === 'done').length;
-  const active = activities.filter(a => getStatus(a) === 'active').length;
-  const overdue = activities.filter(a => getStatus(a) === 'overdue').length;
-  const pct = total ? Math.round(done / total * 100) : 0;
-  document.getElementById('metrics').innerHTML = `
-    <div class="metric"><div class="metric-label">Total</div><div class="metric-value">${total}</div></div>
-    <div class="metric"><div class="metric-label">En curso</div><div class="metric-value" style="color:var(--green)">${active}</div></div>
-    <div class="metric"><div class="metric-label">Vencidas</div><div class="metric-value" style="color:var(--red)">${overdue}</div></div>
-    <div class="metric">
-      <div class="metric-label">Completadas</div>
-      <div class="metric-value">${done} <span style="font-size:13px;color:var(--text3)">${pct}%</span></div>
-      <div class="progress"><div class="progress-fill" style="width:${pct}%"></div></div>
-    </div>`;
-
-  const el = document.getElementById('list');
-  if (!list.length) {
-    el.innerHTML = `<div class="empty">${activities.length ? 'Sin resultados para el filtro aplicado.' : 'No hay actividades aún.<br>Crea una desde la pestaña <strong>+ Nueva</strong>.'}</div>`;
-    return;
+}
+function buildChecklist(sel=[]){
+  const el=document.getElementById('member-checklist');
+  if(!members.length){el.innerHTML='<div style="padding:8px;color:var(--text3);font-size:13px">Agrega miembros en la pestana <strong>Equipo</strong> primero.</div>';return}
+  el.innerHTML=members.map((m,i)=>'<label class="mcheck"><input type="checkbox" value="'+m.id+'"'+(sel.includes(m.id)?' checked':'')+'><div class="av-lg '+COLS[i%7]+'" style="width:28px;height:28px;font-size:10px">'+ini(m.name)+'</div><div style="flex:1;min-width:0"><div style="font-size:13.5px">'+esc(m.name)+'</div>'+(m.role?'<div style="font-size:11.5px;color:var(--text3)">'+esc(m.role)+'</div>':'')+'</div></label>').join('');
+}
+function getChecked(){return[...document.querySelectorAll('#member-checklist input:checked')].map(c=>c.value)}
+async function saveAct(){
+  const title=document.getElementById('e-title').value.trim();if(!title){toast('El titulo es obligatorio');return}
+  const dtype=document.getElementById('e-dtype').value,sel=getChecked();
+  const body={title,description:document.getElementById('e-desc').value.trim()||null,date_type:dtype,date_single:dtype==='single'?document.getElementById('e-date').value||null:null,date_start:dtype==='range'?document.getElementById('e-dstart').value||null:null,date_end:dtype==='range'?document.getElementById('e-dend').value||null:null,priority:document.getElementById('e-priority').value,reminder_time:document.getElementById('e-time').value,status:'pending',group_activity:sel.length>1};
+  try{
+    let id=editActId;
+    if(editActId){await PATCH('/rest/v1/activities?id=eq.'+editActId,body);await DEL('/rest/v1/activity_assignments?activity_id=eq.'+editActId);}
+    else{const r=await POST('/rest/v1/activities',body);id=r[0].id;}
+    if(sel.length&&id)await POST('/rest/v1/activity_assignments',sel.map(mid=>({activity_id:id,member_id:mid})),'return=minimal');
+    toast(editActId?'Actividad actualizada':'Actividad guardada');
+  }catch(e){toast('Error: '+e.message);return}
+  editActId=null;clearActForm();await loadAll();goTab('activities');
+}
+async function markDone(id){try{await PATCH('/rest/v1/activities?id=eq.'+id,{status:'done'})}catch{}const a=acts.find(x=>x.id===id);if(a)a.status='done';renderActs();toast('Completada');}
+async function delAct(id){if(!confirm('Eliminar esta actividad?'))return;try{await DEL('/rest/v1/activities?id=eq.'+id)}catch{}acts=acts.filter(a=>a.id!==id);delete asgn[id];renderActs();toast('Eliminada');}
+function editAct(id){
+  const a=acts.find(x=>x.id===id);if(!a)return;editActId=id;
+  document.getElementById('e-title').value=a.title||'';document.getElementById('e-desc').value=a.description||'';
+  document.getElementById('e-dtype').value=a.date_type||'single';document.getElementById('e-date').value=a.date_single||'';
+  document.getElementById('e-dstart').value=a.date_start||'';document.getElementById('e-dend').value=a.date_end||'';
+  document.getElementById('e-priority').value=a.priority||'normal';document.getElementById('e-time').value=a.reminder_time||'08:00';
+  toggleDates();buildChecklist(asgn[id]||[]);goTab('new');
+}
+function openMModal(id=null){
+  editMId=id;document.getElementById('m-modal-title').textContent=id?'Editar miembro':'Agregar miembro';
+  if(id){const m=members.find(x=>x.id===id);document.getElementById('m-name').value=m.name||'';document.getElementById('m-role').value=m.role||'';document.getElementById('m-phone').value=m.phone||'';document.getElementById('m-email').value=m.email||'';}
+  else['m-name','m-role','m-phone','m-email'].forEach(i=>document.getElementById(i).value='');
+  document.getElementById('m-modal').style.display='flex';
+}
+function closeMModal(){document.getElementById('m-modal').style.display='none';editMId=null}
+async function saveMember(){
+  const name=document.getElementById('m-name').value.trim();if(!name){toast('El nombre es obligatorio');return}
+  const body={name,role:document.getElementById('m-role').value.trim()||null,phone:document.getElementById('m-phone').value.trim()||null,email:document.getElementById('m-email').value.trim()||null,active:true};
+  try{if(editMId)await PATCH('/rest/v1/team_members?id=eq.'+editMId,body);else await POST('/rest/v1/team_members',body,'return=minimal');toast(editMId?'Miembro actualizado':'Miembro agregado');}
+  catch(e){toast('Error: '+e.message);return}
+  closeMModal();await loadAll();
+}
+async function delMember(id){if(!confirm('Eliminar este miembro?'))return;try{await DEL('/rest/v1/team_members?id=eq.'+id)}catch{}members=members.filter(m=>m.id!==id);renderTeam();buildSelects();buildChecklist();toast('Miembro eliminado');}
+async function notifyAll(actId){
+  const a=acts.find(x=>x.id===actId);if(!a)return;
+  const k=cfg.wakey;if(!k){toast('Agrega la API Key de CallMeBot en Configuracion');goTab('config');return}
+  const targets=(asgn[actId]||[]).map(id=>members.find(m=>m.id===id)).filter(m=>m&&m.phone);
+  if(!targets.length&&!cfg.phone){toast('Ningun miembro tiene WhatsApp registrado');return}
+  const s=st(a),emoji=s==='overdue'?'VENCIDA':s==='active'?'En curso':'Vence hoy';
+  const sendTo=targets.length?targets:[{name:'',phone:cfg.phone}];
+  let cnt=0;
+  for(const m of sendTo){
+    const msg=['Recordatorio Celsia',m.name?'Hola '+m.name:'','',a.title,a.description||null,fmtD(a),'Estado: '+emoji].filter(Boolean).join('\n');
+    try{await fetch('https://api.callmebot.com/whatsapp.php?phone='+m.phone+'&text='+encodeURIComponent(msg)+'&apikey='+k,{mode:'no-cors'})}catch{}
+    await new Promise(r=>setTimeout(r,600));cnt++;
   }
-  el.innerHTML = list.map(act => `
-    <div class="act-item">
-      <div class="act-top">
-        <div class="act-title">${esc(act.title)}</div>
-        <span class="badge ${STATUS_CLASS[act._status]}">${STATUS_LABEL[act._status]}</span>
-        ${act.date_type === 'range' ? '<span class="badge b-range">Rango</span>' : ''}
-      </div>
-      <div class="act-meta">
-        📅 ${fmtDate(act)}${act.owner ? ' · 👤 ' + esc(act.owner) : ''}${PRIORITY_LABEL[act.priority] || ''} · ⏰ ${act.reminder_time}
-      </div>
-      ${act.description ? `<div class="act-desc">${esc(act.description)}</div>` : ''}
-      <div class="act-btns">
-        ${act._status !== 'done' ? `<button class="btn btn-ghost btn-sm" onclick="markDone('${act.id}')">✓ Completar</button>` : ''}
-        <button class="btn btn-ghost btn-sm" onclick="editAct('${act.id}')">Editar</button>
-        <button class="btn btn-ghost btn-sm" onclick="sendWA('${act.id}')">📱 WhatsApp</button>
-        <button class="btn btn-danger btn-sm" onclick="deleteAct('${act.id}')">Eliminar</button>
-      </div>
-    </div>`).join('');
+  toast('Notificacion enviada a '+cnt+' destinatario'+(cnt!==1?'s':''));
 }
-
-function esc(s) {
-  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+function saveCfg(){
+  cfg={url:document.getElementById('c-url').value.trim(),key:document.getElementById('c-key').value.trim(),phone:document.getElementById('c-phone').value.trim(),wakey:document.getElementById('c-wakey').value.trim()};
+  localStorage.setItem('act_cfg',JSON.stringify(cfg));toast('Configuracion guardada');loadAll();
 }
-
-// ─── CRUD ─────────────────────────────────────────────────────────────────────
-async function save() {
-  const title = document.getElementById('e-title').value.trim();
-  if (!title) { toast('El título es obligatorio'); return; }
-  const dtype = document.getElementById('e-dtype').value;
-  const act = {
-    id: editingId || ('loc_' + crypto.randomUUID()),
-    title,
-    description: document.getElementById('e-desc').value.trim(),
-    date_type: dtype,
-    date_single: dtype === 'single' ? document.getElementById('e-date').value : null,
-    date_start:  dtype === 'range'  ? document.getElementById('e-dstart').value : null,
-    date_end:    dtype === 'range'  ? document.getElementById('e-dend').value   : null,
-    owner:    document.getElementById('e-owner').value.trim(),
-    priority: document.getElementById('e-priority').value,
-    reminder_time: document.getElementById('e-time').value,
-    status: 'pending',
-    created_at: new Date().toISOString()
-  };
-
-  if (editingId) {
-    const idx = activities.findIndex(a => a.id === editingId);
-    if (idx !== -1) { act.status = activities[idx].status; activities[idx] = act; }
-  } else {
-    activities.unshift(act);
-  }
-
-  saveLocal();
-  const newId = await upsertActivity(act);
-  if (newId && act.id.startsWith('loc_')) {
-    const idx = activities.findIndex(a => a.id === act.id);
-    if (idx !== -1) activities[idx].id = newId;
-    saveLocal();
-  }
-
-  toast(editingId ? 'Actividad actualizada ✓' : 'Actividad guardada ✓');
-  editingId = null;
-  clearForm();
-  goTab('activities');
+async function testSupa(){
+  const u=document.getElementById('c-url').value.trim()||SB_URL,k=document.getElementById('c-key').value.trim()||SB_KEY;
+  const el=document.getElementById('supa-st');el.textContent='Probando...';
+  try{const r=await fetch(u+'/rest/v1/activities?limit=1',{headers:{'apikey':k,'Authorization':'Bearer '+k}});el.innerHTML=r.ok?'<span style="color:var(--gtxt)">Conexion exitosa</span>':'<span style="color:var(--rtxt)">Error '+r.status+'</span>';}
+  catch{el.innerHTML='<span style="color:var(--rtxt)">No se pudo conectar</span>'}
 }
-
-async function markDone(id) {
-  const act = activities.find(a => a.id === id);
-  if (!act) return;
-  act.status = 'done';
-  saveLocal();
-  render();
-  await upsertActivity(act);
-  toast('Marcada como completada ✓');
+async function testWA(){
+  const ph=document.getElementById('c-phone').value.trim(),k=document.getElementById('c-wakey').value.trim();
+  const el=document.getElementById('wa-st');
+  if(!ph||!k){el.innerHTML='<span style="color:var(--rtxt)">Completa numero y API Key.</span>';return}
+  try{await fetch('https://api.callmebot.com/whatsapp.php?phone='+ph+'&text='+encodeURIComponent('Prueba Gestor Celsia')+'&apikey='+k,{mode:'no-cors'})}catch{}
+  el.innerHTML='<span style="color:var(--gtxt)">Solicitud enviada - revisa WhatsApp</span>';
 }
-
-async function deleteAct(id) {
-  if (!confirm('¿Eliminar esta actividad?')) return;
-  activities = activities.filter(a => a.id !== id);
-  saveLocal();
-  render();
-  await deleteRemote(id);
-  toast('Actividad eliminada');
+function loadCfg(){if(cfg.url)document.getElementById('c-url').value=cfg.url;if(cfg.key)document.getElementById('c-key').value=cfg.key;if(cfg.phone)document.getElementById('c-phone').value=cfg.phone;if(cfg.wakey)document.getElementById('c-wakey').value=cfg.wakey;}
+function goTab(t){
+  ['activities','new','team','mine','config'].forEach((id,i)=>{document.getElementById('tab-'+id).style.display=id===t?'block':'none';document.querySelectorAll('.tab')[i].classList.toggle('active',id===t);});
+  if(t==='activities')renderActs();if(t==='team')renderTeam();if(t==='mine')renderByMember();if(t==='config')loadCfg();
+  if(t==='new'&&!editActId){clearActForm();buildChecklist();}
 }
-
-function editAct(id) {
-  const act = activities.find(a => a.id === id);
-  if (!act) return;
-  editingId = id;
-  document.getElementById('e-title').value = act.title || '';
-  document.getElementById('e-desc').value = act.description || '';
-  document.getElementById('e-dtype').value = act.date_type || 'single';
-  document.getElementById('e-date').value = act.date_single || '';
-  document.getElementById('e-dstart').value = act.date_start || '';
-  document.getElementById('e-dend').value = act.date_end || '';
-  document.getElementById('e-owner').value = act.owner || '';
-  document.getElementById('e-priority').value = act.priority || 'normal';
-  document.getElementById('e-time').value = act.reminder_time || '08:00';
-  toggleDates();
-  goTab('new');
-}
-
-async function sendWA(id) {
-  const act = activities.find(a => a.id === id);
-  if (!act) return;
-  const phone = cfg.phone;
-  const apiKey = cfg.wakey;
-  if (!phone || !apiKey) { toast('Configura WhatsApp en Configuración'); goTab('config'); return; }
-  const t = today();
-  const overdue = getStatus(act) === 'overdue';
-  const emoji = overdue ? '🔴' : act.priority === 'critica' ? '🚨' : act.priority === 'alta' ? '⚠️' : '📋';
-  const msg = [`${emoji} *Recordatorio Celsia*`, '', `*${act.title}*`,
-    act.description || null, `📅 ${fmtDate(act)}`,
-    act.owner ? `👤 ${act.owner}` : null,
-    `📌 Estado: ${STATUS_LABEL[getStatus(act)]}`
-  ].filter(Boolean).join('\n');
-  try {
-    await fetch(`https://api.callmebot.com/whatsapp.php?phone=${phone}&text=${encodeURIComponent(msg)}&apikey=${apiKey}`, { mode: 'no-cors' });
-    toast('Recordatorio enviado por WhatsApp 📱');
-  } catch { toast('Mensaje enviado — verifica WhatsApp'); }
-}
-
-// ─── Config ───────────────────────────────────────────────────────────────────
-function saveCfg() {
-  cfg = {
-    url:   document.getElementById('c-url').value.trim(),
-    key:   document.getElementById('c-key').value.trim(),
-    phone: document.getElementById('c-phone').value.trim(),
-    wakey: document.getElementById('c-wakey').value.trim()
-  };
-  localStorage.setItem('act_cfg', JSON.stringify(cfg));
-  toast('Configuración guardada ✓');
-  loadActivities();
-}
-
-async function testSupa() {
-  const url = document.getElementById('c-url').value.trim() || SUPABASE_URL;
-  const key = document.getElementById('c-key').value.trim() || SUPABASE_KEY;
-  const el = document.getElementById('supa-status');
-  el.innerHTML = 'Probando…';
-  try {
-    const r = await fetch(`${url}/rest/v1/activities?limit=1`, { headers: sbHeaders(key) });
-    el.innerHTML = r.ok
-      ? '<span class="dot dot-green"></span><span style="color:var(--green-text)">Conexión exitosa ✓</span>'
-      : `<span class="dot dot-red"></span><span style="color:var(--red-text)">Error ${r.status} — verifica URL y clave</span>`;
-  } catch {
-    el.innerHTML = '<span class="dot dot-red"></span><span style="color:var(--red-text)">No se pudo conectar</span>';
-  }
-}
-
-async function testWA() {
-  const phone = document.getElementById('c-phone').value.trim();
-  const key   = document.getElementById('c-wakey').value.trim();
-  const el = document.getElementById('wa-status');
-  if (!phone || !key) { el.innerHTML = '<span style="color:var(--red-text)">Completa número y API Key.</span>'; return; }
-  const msg = encodeURIComponent('✅ Prueba de conexión desde Gestor de Actividades Celsia');
-  try {
-    await fetch(`https://api.callmebot.com/whatsapp.php?phone=${phone}&text=${msg}&apikey=${key}`, { mode: 'no-cors' });
-    el.innerHTML = '<span class="dot dot-green"></span><span style="color:var(--green-text)">Solicitud enviada — revisa tu WhatsApp</span>';
-  } catch { el.innerHTML = '<span style="color:var(--red-text)">Error al enviar</span>'; }
-}
-
-function loadCfg() {
-  if (cfg.url)   document.getElementById('c-url').value   = cfg.url;
-  if (cfg.key)   document.getElementById('c-key').value   = cfg.key;
-  if (cfg.phone) document.getElementById('c-phone').value = cfg.phone;
-  if (cfg.wakey) document.getElementById('c-wakey').value = cfg.wakey;
-}
-
-// ─── UI helpers ───────────────────────────────────────────────────────────────
-function goTab(t) {
-  ['activities','new','config'].forEach((id, i) => {
-    document.getElementById('tab-'+id).style.display = id === t ? 'block' : 'none';
-    document.querySelectorAll('.tab')[i].classList.toggle('active', id === t);
-  });
-  if (t === 'activities') render();
-  if (t === 'config') loadCfg();
-  if (t === 'new' && !editingId) clearForm();
-}
-
-function toggleDates() {
-  const r = document.getElementById('e-dtype').value === 'range';
-  document.getElementById('date-single').style.display = r ? 'none' : 'block';
-  document.getElementById('date-range').style.display  = r ? 'block' : 'none';
-}
-
-function clearForm() {
-  ['e-title','e-desc','e-date','e-dstart','e-dend','e-owner'].forEach(id => {
-    const el = document.getElementById(id); if (el) el.value = '';
-  });
-  document.getElementById('e-dtype').value = 'single';
-  document.getElementById('e-priority').value = 'normal';
-  document.getElementById('e-time').value = '08:00';
-  toggleDates();
-}
-
-function cancelEdit() { editingId = null; clearForm(); goTab('activities'); }
-
-function saveLocal() { localStorage.setItem('act_local', JSON.stringify(activities)); }
-
-let toastTimer;
-function toast(msg) {
-  const el = document.getElementById('toast');
-  el.textContent = msg;
-  el.classList.add('show');
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => el.classList.remove('show'), 2800);
-}
-
-// ─── Init ─────────────────────────────────────────────────────────────────────
-loadActivities();
+function toggleDates(){const r=document.getElementById('e-dtype').value==='range';document.getElementById('date-single').style.display=r?'none':'block';document.getElementById('date-range').style.display=r?'block':'none';}
+function clearActForm(){['e-title','e-desc','e-date','e-dstart','e-dend'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=''});document.getElementById('e-dtype').value='single';document.getElementById('e-priority').value='normal';document.getElementById('e-time').value='08:00';toggleDates();}
+function cancelEdit(){editActId=null;clearActForm();goTab('activities')}
+let toastT;
+function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>el.classList.remove('show'),2800)}
+loadAll();
 </script>
 </body>
 </html>
