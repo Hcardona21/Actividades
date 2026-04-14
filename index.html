@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Gestor de Actividades — Celsia</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #ffffff; --bg2: #f5f5f3; --bg3: #ededea;
+    --text: #1a1a18; --text2: #5f5e5a; --text3: #888780;
+    --border: rgba(0,0,0,0.12); --border2: rgba(0,0,0,0.2);
+    --green: #1d9e75; --green-bg: #eaf3de; --green-text: #3b6d11;
+    --amber-bg: #faeeda; --amber-text: #854f0b;
+    --red: #e24b4a; --red-bg: #fcebeb; --red-text: #a32d2d;
+    --blue-bg: #e6f1fb; --blue-text: #185fa5;
+    --radius: 8px; --radius-lg: 12px;
+    --font: 'Inter', system-ui, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1c1c1a; --bg2: #252523; --bg3: #2e2e2b;
+      --text: #f0efe8; --text2: #b4b2a9; --text3: #888780;
+      --border: rgba(255,255,255,0.1); --border2: rgba(255,255,255,0.2);
+      --green-bg: #173404; --green-text: #97c459;
+      --amber-bg: #412402; --amber-text: #fac775;
+      --red-bg: #501313; --red-text: #f09595;
+      --blue-bg: #042c53; --blue-text: #85b7eb;
+    }
+  }
+  body { font-family: var(--font); background: var(--bg3); color: var(--text); min-height: 100vh; }
+  a { color: var(--blue-text); }
+
+  /* Layout */
+  .app { max-width: 860px; margin: 0 auto; padding: 2rem 1rem 4rem; }
+  .header { margin-bottom: 2rem; }
+  .header h1 { font-size: 22px; font-weight: 600; }
+  .header p { font-size: 14px; color: var(--text2); margin-top: 4px; }
+
+  /* Tabs */
+  .tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--border); margin-bottom: 1.5rem; }
+  .tab { padding: 9px 18px; font-size: 14px; color: var(--text2); cursor: pointer; border: none; background: none; border-bottom: 2px solid transparent; font-family: var(--font); transition: all .15s; }
+  .tab.active { color: var(--text); border-bottom-color: var(--text); font-weight: 500; }
+  .tab:hover:not(.active) { color: var(--text); }
+
+  /* Card */
+  .card { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem; margin-bottom: 1rem; }
+
+  /* Form */
+  .form-group { margin-bottom: 1rem; }
+  label { display: block; font-size: 13px; color: var(--text2); margin-bottom: 5px; }
+  input, textarea, select {
+    width: 100%; padding: 8px 12px; font-size: 14px;
+    border: 1px solid var(--border2); border-radius: var(--radius);
+    background: var(--bg); color: var(--text); font-family: var(--font);
+    transition: border-color .15s;
+  }
+  input:focus, textarea:focus, select:focus { outline: none; border-color: var(--text3); }
+  textarea { resize: vertical; min-height: 72px; line-height: 1.5; }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 540px) { .row { grid-template-columns: 1fr; } }
+
+  /* Buttons */
+  .btn { padding: 8px 18px; font-size: 14px; border-radius: var(--radius); cursor: pointer; font-family: var(--font); transition: all .15s; display: inline-flex; align-items: center; gap: 6px; }
+  .btn-primary { background: var(--text); color: var(--bg); border: none; font-weight: 500; }
+  .btn-primary:hover { opacity: .85; }
+  .btn-ghost { background: none; border: 1px solid var(--border2); color: var(--text2); }
+  .btn-ghost:hover { background: var(--bg2); color: var(--text); }
+  .btn-danger { background: none; border: 1px solid var(--red); color: var(--red-text); }
+  .btn-danger:hover { background: var(--red-bg); }
+  .btn-sm { padding: 5px 12px; font-size: 12px; }
+  .actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 1rem; flex-wrap: wrap; }
+
+  /* Metrics */
+  .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 1.5rem; }
+  @media (max-width: 540px) { .metrics { grid-template-columns: 1fr 1fr; } }
+  .metric { background: var(--bg2); border-radius: var(--radius); padding: .9rem 1rem; }
+  .metric-label { font-size: 12px; color: var(--text2); margin-bottom: 3px; }
+  .metric-value { font-size: 22px; font-weight: 600; }
+
+  /* Progress */
+  .progress { height: 4px; background: var(--border); border-radius: 2px; margin-top: 6px; }
+  .progress-fill { height: 100%; background: var(--green); border-radius: 2px; transition: width .4s; }
+
+  /* Filters */
+  .filter-bar { display: flex; gap: 8px; margin-bottom: 1rem; flex-wrap: wrap; }
+  .filter-bar select { flex: 1; min-width: 140px; max-width: 200px; }
+  .filter-bar input { flex: 2; min-width: 180px; }
+
+  /* Activity item */
+  .act-item { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1rem 1.1rem; margin-bottom: 8px; }
+  .act-top { display: flex; align-items: flex-start; gap: 10px; flex-wrap: wrap; }
+  .act-title { font-size: 15px; font-weight: 500; flex: 1; min-width: 140px; }
+  .act-meta { font-size: 12px; color: var(--text3); margin-top: 4px; line-height: 1.6; }
+  .act-desc { font-size: 13px; color: var(--text2); margin-top: 6px; line-height: 1.5; }
+  .act-btns { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+
+  /* Badges */
+  .badge { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 500; white-space: nowrap; }
+  .b-active  { background: var(--green-bg); color: var(--green-text); }
+  .b-pending { background: var(--amber-bg); color: var(--amber-text); }
+  .b-done    { background: var(--bg3);      color: var(--text3); }
+  .b-overdue { background: var(--red-bg);   color: var(--red-text); }
+  .b-range   { background: var(--blue-bg);  color: var(--blue-text); }
+
+  /* Alerts */
+  .alert { padding: 11px 14px; border-radius: var(--radius); font-size: 13px; margin-bottom: 1rem; line-height: 1.5; }
+  .alert-info    { background: var(--blue-bg);  color: var(--blue-text);  border: 1px solid rgba(56,138,221,.25); }
+  .alert-success { background: var(--green-bg); color: var(--green-text); border: 1px solid rgba(29,158,117,.25); }
+  .alert-warn    { background: var(--amber-bg); color: var(--amber-text); border: 1px solid rgba(186,117,23,.25); }
+
+  /* Separator */
+  hr { border: none; border-top: 1px solid var(--border); margin: 1.25rem 0; }
+
+  /* Code block */
+  pre { background: var(--bg2); padding: 12px 14px; border-radius: var(--radius); font-size: 12px; font-family: 'Menlo', 'Consolas', monospace; overflow-x: auto; line-height: 1.6; color: var(--text); }
+
+  /* Empty state */
+  .empty { text-align: center; padding: 3rem 1rem; color: var(--text3); font-size: 14px; line-height: 1.8; }
+
+  /* Toast */
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px);
+    background: var(--text); color: var(--bg); padding: 10px 22px;
+    border-radius: var(--radius); font-size: 13px; z-index: 999;
+    opacity: 0; transition: all .25s; pointer-events: none; white-space: nowrap;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* Status dot */
+  .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 5px; }
+  .dot-green { background: var(--green); }
+  .dot-red   { background: var(--red); }
+  .dot-gray  { background: var(--text3); }
+
+  /* Config section */
+  .cfg-section { margin-bottom: 1.5rem; }
+  .cfg-section h3 { font-size: 15px; font-weight: 500; margin-bottom: .9rem; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <h1>Gestor de Actividades</h1>
+    <p>Seguimiento de tareas con recordatorios automáticos por WhatsApp</p>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="goTab('activities')">Actividades</button>
+    <button class="tab" onclick="goTab('new')">+ Nueva</button>
+    <button class="tab" onclick="goTab('config')">Configuración</button>
+  </div>
+
+  <!-- TAB: ACTIVIDADES -->
+  <div id="tab-activities">
+    <div class="metrics" id="metrics"></div>
+    <div class="filter-bar">
+      <select id="f-status" onchange="render()">
+        <option value="">Todos los estados</option>
+        <option value="pending">Pendiente</option>
+        <option value="active">En curso</option>
+        <option value="done">Completado</option>
+        <option value="overdue">Vencido</option>
+      </select>
+      <input type="text" id="f-search" placeholder="Buscar por título…" oninput="render()" />
+    </div>
+    <div id="list"></div>
+  </div>
+
+  <!-- TAB: NUEVA ACTIVIDAD -->
+  <div id="tab-new" style="display:none">
+    <div class="card">
+      <div class="form-group">
+        <label>Título *</label>
+        <input id="e-title" type="text" placeholder="Ej: Revisión de medición mensual" />
+      </div>
+      <div class="form-group">
+        <label>Descripción</label>
+        <textarea id="e-desc" placeholder="Detalle, contexto, responsable…"></textarea>
+      </div>
+      <div class="form-group">
+        <label>Tipo de fecha</label>
+        <select id="e-dtype" onchange="toggleDates()">
+          <option value="single">Fecha específica</option>
+          <option value="range">Rango de fechas</option>
+        </select>
+      </div>
+      <div id="date-single" class="form-group">
+        <label>Fecha</label>
+        <input id="e-date" type="date" />
+      </div>
+      <div id="date-range" style="display:none">
+        <div class="row">
+          <div class="form-group"><label>Fecha inicio</label><input id="e-dstart" type="date" /></div>
+          <div class="form-group"><label>Fecha fin</label><input id="e-dend" type="date" /></div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="form-group">
+          <label>Responsable</label>
+          <input id="e-owner" type="text" placeholder="Ej: Carlos López" />
+        </div>
+        <div class="form-group">
+          <label>Prioridad</label>
+          <select id="e-priority">
+            <option value="normal">Normal</option>
+            <option value="alta">Alta</option>
+            <option value="critica">Crítica</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Hora de recordatorio</label>
+        <input id="e-time" type="time" value="08:00" />
+      </div>
+      <div class="actions">
+        <button class="btn btn-ghost" onclick="cancelEdit()">Cancelar</button>
+        <button class="btn btn-primary" onclick="save()">Guardar actividad</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: CONFIGURACIÓN -->
+  <div id="tab-config" style="display:none">
+    <div class="card">
+
+      <div class="cfg-section">
+        <h3>Conexión Supabase</h3>
+        <div class="alert alert-info">Ingresa tus credenciales para guardar actividades en la nube.</div>
+        <div class="form-group">
+          <label>URL del proyecto</label>
+          <input id="c-url" type="text" placeholder="https://xxxx.supabase.co" />
+        </div>
+        <div class="form-group">
+          <label>Anon Key</label>
+          <input id="c-key" type="password" placeholder="eyJhbGci…" />
+        </div>
+        <div style="display:flex;gap:8px;margin-top:6px;">
+          <button class="btn btn-ghost" onclick="testSupa()">Probar conexión</button>
+          <button class="btn btn-primary" onclick="saveCfg()">Guardar</button>
+        </div>
+        <div id="supa-status" style="margin-top:10px;font-size:13px;"></div>
+      </div>
+
+      <hr />
+
+      <div class="cfg-section">
+        <h3>WhatsApp — CallMeBot</h3>
+        <div class="alert alert-warn">
+          Para obtener tu API Key gratuita: guarda el número <strong>+34 644 37 79 70</strong> en WhatsApp y envíale el mensaje <code>I allow callmebot to send me messages</code>.
+        </div>
+        <div class="row">
+          <div class="form-group">
+            <label>Tu número WhatsApp</label>
+            <input id="c-phone" type="tel" placeholder="+573001234567" />
+          </div>
+          <div class="form-group">
+            <label>API Key CallMeBot</label>
+            <input id="c-wakey" type="text" placeholder="123456" />
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:6px;">
+          <button class="btn btn-ghost" onclick="testWA()">Enviar mensaje de prueba</button>
+          <button class="btn btn-primary" onclick="saveCfg()">Guardar</button>
+        </div>
+        <div id="wa-status" style="margin-top:10px;font-size:13px;"></div>
+      </div>
+
+      <hr />
+
+      <div class="cfg-section">
+        <h3>SQL — Crear tabla en Supabase</h3>
+        <div class="alert alert-info">Ejecuta esto en <strong>Supabase → SQL Editor</strong> si aún no creaste la tabla:</div>
+        <pre>CREATE TABLE IF NOT EXISTS activities (
+  id            uuid        DEFAULT gen_random_uuid() PRIMARY KEY,
+  title         text        NOT NULL,
+  description   text,
+  date_type     text        DEFAULT 'single',
+  date_single   date,
+  date_start    date,
+  date_end      date,
+  owner         text,
+  priority      text        DEFAULT 'normal',
+  reminder_time text        DEFAULT '08:00',
+  status        text        DEFAULT 'pending',
+  created_at    timestamptz DEFAULT now()
+);</pre>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── Config ───────────────────────────────────────────────────────────────────
+const SUPABASE_URL = 'https://ifbhzcqhijhtqngqkbkq.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlmYmh6Y3FoaWpodHFuZ3FrYmtxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1OTE5OTEsImV4cCI6MjA5MTE2Nzk5MX0.n87ZqRHzQhSLvXHt_0EKcltGHXoUu3lmgnTQn8uHuP8';
+
+// ─── Estado ───────────────────────────────────────────────────────────────────
+let activities = [];
+let editingId = null;
+let cfg = JSON.parse(localStorage.getItem('act_cfg') || '{}');
+
+// ─── Supabase helpers ────────────────────────────────────────────────────────
+function sbHeaders(key) {
+  return {
+    'Content-Type': 'application/json',
+    'apikey': key || SUPABASE_KEY,
+    'Authorization': 'Bearer ' + (key || SUPABASE_KEY)
+  };
+}
+
+async function sbFetch(path, opts = {}) {
+  const url = (cfg.url || SUPABASE_URL) + path;
+  const key = cfg.key || SUPABASE_KEY;
+  const res = await fetch(url, { ...opts, headers: { ...sbHeaders(key), ...(opts.headers || {}) } });
+  return res;
+}
+
+async function loadActivities() {
+  try {
+    const res = await sbFetch('/rest/v1/activities?order=created_at.desc&select=*');
+    if (res.ok) {
+      activities = await res.json();
+    } else {
+      activities = JSON.parse(localStorage.getItem('act_local') || '[]');
+    }
+  } catch {
+    activities = JSON.parse(localStorage.getItem('act_local') || '[]');
+  }
+  render();
+}
+
+async function upsertActivity(act) {
+  try {
+    const body = {
+      title: act.title, description: act.description || null,
+      date_type: act.date_type, date_single: act.date_single || null,
+      date_start: act.date_start || null, date_end: act.date_end || null,
+      owner: act.owner || null, priority: act.priority,
+      reminder_time: act.reminder_time, status: act.status
+    };
+    if (act.id && !act.id.startsWith('loc_')) {
+      await sbFetch(`/rest/v1/activities?id=eq.${act.id}`, {
+        method: 'PATCH',
+        headers: { 'Prefer': 'return=minimal' },
+        body: JSON.stringify(body)
+      });
+    } else {
+      const res = await sbFetch('/rest/v1/activities', {
+        method: 'POST',
+        headers: { 'Prefer': 'return=representation' },
+        body: JSON.stringify(body)
+      });
+      if (res.ok) {
+        const data = await res.json();
+        return data[0]?.id;
+      }
+    }
+  } catch {}
+  return null;
+}
+
+async function deleteRemote(id) {
+  if (!id || id.startsWith('loc_')) return;
+  try { await sbFetch(`/rest/v1/activities?id=eq.${id}`, { method: 'DELETE' }); } catch {}
+}
+
+// ─── Status logic ────────────────────────────────────────────────────────────
+function today() {
+  return new Date().toISOString().split('T')[0];
+}
+
+function getStatus(act) {
+  if (act.status === 'done') return 'done';
+  const t = today();
+  if (act.date_type === 'single') {
+    if (!act.date_single) return 'pending';
+    if (act.date_single < t) return 'overdue';
+    if (act.date_single === t) return 'active';
+    return 'pending';
+  } else {
+    if (!act.date_start || !act.date_end) return 'pending';
+    if (act.date_end < t) return 'overdue';
+    if (act.date_start <= t && t <= act.date_end) return 'active';
+    return 'pending';
+  }
+}
+
+const STATUS_LABEL = { pending: 'Pendiente', active: 'En curso', done: 'Completado', overdue: 'Vencido' };
+const STATUS_CLASS = { pending: 'b-pending', active: 'b-active', done: 'b-done', overdue: 'b-overdue' };
+const PRIORITY_LABEL = { normal: '', alta: ' · Alta prioridad', critica: ' · 🚨 CRÍTICA' };
+
+function fmtDate(act) {
+  if (act.date_type === 'range') return `${fmtD(act.date_start)} → ${fmtD(act.date_end)}`;
+  return fmtD(act.date_single);
+}
+function fmtD(d) {
+  if (!d) return '—';
+  const [y, m, day] = d.split('-');
+  const M = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'][+m-1];
+  return `${+day} ${M} ${y}`;
+}
+
+// ─── Render ───────────────────────────────────────────────────────────────────
+function render() {
+  const fs = document.getElementById('f-status').value;
+  const fq = document.getElementById('f-search').value.toLowerCase();
+
+  let list = activities.map(a => ({ ...a, _status: getStatus(a) }));
+  if (fs) list = list.filter(a => a._status === fs);
+  if (fq) list = list.filter(a => a.title.toLowerCase().includes(fq));
+  list.sort((a, b) => {
+    const o = { overdue: 0, active: 1, pending: 2, done: 3 };
+    return o[a._status] - o[b._status];
+  });
+
+  // Metrics
+  const total = activities.length;
+  const done  = activities.filter(a => getStatus(a) === 'done').length;
+  const active = activities.filter(a => getStatus(a) === 'active').length;
+  const overdue = activities.filter(a => getStatus(a) === 'overdue').length;
+  const pct = total ? Math.round(done / total * 100) : 0;
+  document.getElementById('metrics').innerHTML = `
+    <div class="metric"><div class="metric-label">Total</div><div class="metric-value">${total}</div></div>
+    <div class="metric"><div class="metric-label">En curso</div><div class="metric-value" style="color:var(--green)">${active}</div></div>
+    <div class="metric"><div class="metric-label">Vencidas</div><div class="metric-value" style="color:var(--red)">${overdue}</div></div>
+    <div class="metric">
+      <div class="metric-label">Completadas</div>
+      <div class="metric-value">${done} <span style="font-size:13px;color:var(--text3)">${pct}%</span></div>
+      <div class="progress"><div class="progress-fill" style="width:${pct}%"></div></div>
+    </div>`;
+
+  const el = document.getElementById('list');
+  if (!list.length) {
+    el.innerHTML = `<div class="empty">${activities.length ? 'Sin resultados para el filtro aplicado.' : 'No hay actividades aún.<br>Crea una desde la pestaña <strong>+ Nueva</strong>.'}</div>`;
+    return;
+  }
+  el.innerHTML = list.map(act => `
+    <div class="act-item">
+      <div class="act-top">
+        <div class="act-title">${esc(act.title)}</div>
+        <span class="badge ${STATUS_CLASS[act._status]}">${STATUS_LABEL[act._status]}</span>
+        ${act.date_type === 'range' ? '<span class="badge b-range">Rango</span>' : ''}
+      </div>
+      <div class="act-meta">
+        📅 ${fmtDate(act)}${act.owner ? ' · 👤 ' + esc(act.owner) : ''}${PRIORITY_LABEL[act.priority] || ''} · ⏰ ${act.reminder_time}
+      </div>
+      ${act.description ? `<div class="act-desc">${esc(act.description)}</div>` : ''}
+      <div class="act-btns">
+        ${act._status !== 'done' ? `<button class="btn btn-ghost btn-sm" onclick="markDone('${act.id}')">✓ Completar</button>` : ''}
+        <button class="btn btn-ghost btn-sm" onclick="editAct('${act.id}')">Editar</button>
+        <button class="btn btn-ghost btn-sm" onclick="sendWA('${act.id}')">📱 WhatsApp</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteAct('${act.id}')">Eliminar</button>
+      </div>
+    </div>`).join('');
+}
+
+function esc(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ─── CRUD ─────────────────────────────────────────────────────────────────────
+async function save() {
+  const title = document.getElementById('e-title').value.trim();
+  if (!title) { toast('El título es obligatorio'); return; }
+  const dtype = document.getElementById('e-dtype').value;
+  const act = {
+    id: editingId || ('loc_' + crypto.randomUUID()),
+    title,
+    description: document.getElementById('e-desc').value.trim(),
+    date_type: dtype,
+    date_single: dtype === 'single' ? document.getElementById('e-date').value : null,
+    date_start:  dtype === 'range'  ? document.getElementById('e-dstart').value : null,
+    date_end:    dtype === 'range'  ? document.getElementById('e-dend').value   : null,
+    owner:    document.getElementById('e-owner').value.trim(),
+    priority: document.getElementById('e-priority').value,
+    reminder_time: document.getElementById('e-time').value,
+    status: 'pending',
+    created_at: new Date().toISOString()
+  };
+
+  if (editingId) {
+    const idx = activities.findIndex(a => a.id === editingId);
+    if (idx !== -1) { act.status = activities[idx].status; activities[idx] = act; }
+  } else {
+    activities.unshift(act);
+  }
+
+  saveLocal();
+  const newId = await upsertActivity(act);
+  if (newId && act.id.startsWith('loc_')) {
+    const idx = activities.findIndex(a => a.id === act.id);
+    if (idx !== -1) activities[idx].id = newId;
+    saveLocal();
+  }
+
+  toast(editingId ? 'Actividad actualizada ✓' : 'Actividad guardada ✓');
+  editingId = null;
+  clearForm();
+  goTab('activities');
+}
+
+async function markDone(id) {
+  const act = activities.find(a => a.id === id);
+  if (!act) return;
+  act.status = 'done';
+  saveLocal();
+  render();
+  await upsertActivity(act);
+  toast('Marcada como completada ✓');
+}
+
+async function deleteAct(id) {
+  if (!confirm('¿Eliminar esta actividad?')) return;
+  activities = activities.filter(a => a.id !== id);
+  saveLocal();
+  render();
+  await deleteRemote(id);
+  toast('Actividad eliminada');
+}
+
+function editAct(id) {
+  const act = activities.find(a => a.id === id);
+  if (!act) return;
+  editingId = id;
+  document.getElementById('e-title').value = act.title || '';
+  document.getElementById('e-desc').value = act.description || '';
+  document.getElementById('e-dtype').value = act.date_type || 'single';
+  document.getElementById('e-date').value = act.date_single || '';
+  document.getElementById('e-dstart').value = act.date_start || '';
+  document.getElementById('e-dend').value = act.date_end || '';
+  document.getElementById('e-owner').value = act.owner || '';
+  document.getElementById('e-priority').value = act.priority || 'normal';
+  document.getElementById('e-time').value = act.reminder_time || '08:00';
+  toggleDates();
+  goTab('new');
+}
+
+async function sendWA(id) {
+  const act = activities.find(a => a.id === id);
+  if (!act) return;
+  const phone = cfg.phone;
+  const apiKey = cfg.wakey;
+  if (!phone || !apiKey) { toast('Configura WhatsApp en Configuración'); goTab('config'); return; }
+  const t = today();
+  const overdue = getStatus(act) === 'overdue';
+  const emoji = overdue ? '🔴' : act.priority === 'critica' ? '🚨' : act.priority === 'alta' ? '⚠️' : '📋';
+  const msg = [`${emoji} *Recordatorio Celsia*`, '', `*${act.title}*`,
+    act.description || null, `📅 ${fmtDate(act)}`,
+    act.owner ? `👤 ${act.owner}` : null,
+    `📌 Estado: ${STATUS_LABEL[getStatus(act)]}`
+  ].filter(Boolean).join('\n');
+  try {
+    await fetch(`https://api.callmebot.com/whatsapp.php?phone=${phone}&text=${encodeURIComponent(msg)}&apikey=${apiKey}`, { mode: 'no-cors' });
+    toast('Recordatorio enviado por WhatsApp 📱');
+  } catch { toast('Mensaje enviado — verifica WhatsApp'); }
+}
+
+// ─── Config ───────────────────────────────────────────────────────────────────
+function saveCfg() {
+  cfg = {
+    url:   document.getElementById('c-url').value.trim(),
+    key:   document.getElementById('c-key').value.trim(),
+    phone: document.getElementById('c-phone').value.trim(),
+    wakey: document.getElementById('c-wakey').value.trim()
+  };
+  localStorage.setItem('act_cfg', JSON.stringify(cfg));
+  toast('Configuración guardada ✓');
+  loadActivities();
+}
+
+async function testSupa() {
+  const url = document.getElementById('c-url').value.trim() || SUPABASE_URL;
+  const key = document.getElementById('c-key').value.trim() || SUPABASE_KEY;
+  const el = document.getElementById('supa-status');
+  el.innerHTML = 'Probando…';
+  try {
+    const r = await fetch(`${url}/rest/v1/activities?limit=1`, { headers: sbHeaders(key) });
+    el.innerHTML = r.ok
+      ? '<span class="dot dot-green"></span><span style="color:var(--green-text)">Conexión exitosa ✓</span>'
+      : `<span class="dot dot-red"></span><span style="color:var(--red-text)">Error ${r.status} — verifica URL y clave</span>`;
+  } catch {
+    el.innerHTML = '<span class="dot dot-red"></span><span style="color:var(--red-text)">No se pudo conectar</span>';
+  }
+}
+
+async function testWA() {
+  const phone = document.getElementById('c-phone').value.trim();
+  const key   = document.getElementById('c-wakey').value.trim();
+  const el = document.getElementById('wa-status');
+  if (!phone || !key) { el.innerHTML = '<span style="color:var(--red-text)">Completa número y API Key.</span>'; return; }
+  const msg = encodeURIComponent('✅ Prueba de conexión desde Gestor de Actividades Celsia');
+  try {
+    await fetch(`https://api.callmebot.com/whatsapp.php?phone=${phone}&text=${msg}&apikey=${key}`, { mode: 'no-cors' });
+    el.innerHTML = '<span class="dot dot-green"></span><span style="color:var(--green-text)">Solicitud enviada — revisa tu WhatsApp</span>';
+  } catch { el.innerHTML = '<span style="color:var(--red-text)">Error al enviar</span>'; }
+}
+
+function loadCfg() {
+  if (cfg.url)   document.getElementById('c-url').value   = cfg.url;
+  if (cfg.key)   document.getElementById('c-key').value   = cfg.key;
+  if (cfg.phone) document.getElementById('c-phone').value = cfg.phone;
+  if (cfg.wakey) document.getElementById('c-wakey').value = cfg.wakey;
+}
+
+// ─── UI helpers ───────────────────────────────────────────────────────────────
+function goTab(t) {
+  ['activities','new','config'].forEach((id, i) => {
+    document.getElementById('tab-'+id).style.display = id === t ? 'block' : 'none';
+    document.querySelectorAll('.tab')[i].classList.toggle('active', id === t);
+  });
+  if (t === 'activities') render();
+  if (t === 'config') loadCfg();
+  if (t === 'new' && !editingId) clearForm();
+}
+
+function toggleDates() {
+  const r = document.getElementById('e-dtype').value === 'range';
+  document.getElementById('date-single').style.display = r ? 'none' : 'block';
+  document.getElementById('date-range').style.display  = r ? 'block' : 'none';
+}
+
+function clearForm() {
+  ['e-title','e-desc','e-date','e-dstart','e-dend','e-owner'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  document.getElementById('e-dtype').value = 'single';
+  document.getElementById('e-priority').value = 'normal';
+  document.getElementById('e-time').value = '08:00';
+  toggleDates();
+}
+
+function cancelEdit() { editingId = null; clearForm(); goTab('activities'); }
+
+function saveLocal() { localStorage.setItem('act_local', JSON.stringify(activities)); }
+
+let toastTimer;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2800);
+}
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+loadActivities();
+</script>
+</body>
+</html>
