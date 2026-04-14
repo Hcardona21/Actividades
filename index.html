@@ -543,7 +543,7 @@ async function testWA(){
   var k=document.getElementById('c-wakey').value.trim();
   var el=document.getElementById('wa-st');
   if(!ph||!k){el.innerHTML='<span style="color:var(--rtx)">Completa numero y API Key.</span>';return;}
-  try{await fetch('https://api.callmebot.com/whatsapp.php?phone='+ph+'&text='+encodeURIComponent('Prueba Gestor Celsia')+'&apikey='+k,{mode:'no-cors'});}catch(e){}
+  try{await fetch('https://api.callmebot.com/whatsapp.php?phone='+ph+'&text='+encodeURIComponent('Prueba Gestor Actividades')+'&apikey='+k,{mode:'no-cors'});}catch(e){}
   el.innerHTML='<span style="color:var(--gtx)">Solicitud enviada - revisa WhatsApp</span>';
 }
 
